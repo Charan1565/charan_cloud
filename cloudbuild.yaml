@@ -1,0 +1,76 @@
+steps:
+  - id: 'branch name'
+    timeout: '10800s'
+    name: 'hashicorp/terraform:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        git config --global init.defaultBranch main
+        echo "***********************"
+        echo "***********************"
+        echo "***********************"
+        echo "$BRANCH_NAME"
+        echo "$BUILD_ID"
+        echo "$PROJECT_ID"
+        echo "$PROJECT_NUMBER"
+        echo "$REPO_NAME"		
+        echo "$_TERRAFORM_ACTION"
+        echo "***********************"
+        echo "***********************"
+        export curdir=`pwd`
+  - id: 'tf init'
+    name: 'hashicorp/terraform:latest'
+    timeout: 10800s
+    entrypoint: 'sh'
+    args: 
+      - '-c'
+      - | 
+        terraform init
+
+  # [START tf-plan]        
+  - id: 'tf plan'
+    name: 'hashicorp/terraform:latest'
+    timeout: 10800s
+    entrypoint: 'sh'
+    args: 
+      - '-c'
+      - | 
+        terraform plan -out=PLAN --var-file=main.tfvars -no-color
+ # [END tf-plan]
+        
+ # [START tf-apply]
+  - id: 'tf apply'
+    timeout: '10800s'
+    name: 'hashicorp/terraform:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        if [ "${_TERRAFORM_ACTION}" == "APPLY" ]; then
+          terraform apply -auto-approve PLAN
+        else
+          echo "***************************** SKIPPING APPLYING *******************************"
+          echo "No Apply"
+          echo "*******************************************************************************"
+        fi
+  # [END tf-apply]  
+
+ # [START tf-destroy]
+  - id: 'tf destroy'
+    timeout: '10800s'
+    name: 'hashicorp/terraform:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        if [ "${_TERRAFORM_ACTION}" == "DESTROY" ]; then
+          terraform destroy -auto-approve --var-file=main.tfvars
+        else
+          echo "***************************** SKIPPING APPLYING *******************************"
+          echo "No Destroy"
+          echo "*******************************************************************************"
+        fi
+   # [END tf-destroy]   
+options:
+  logging: CLOUD_LOGGING_ONLY
